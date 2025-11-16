@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+langchain
+langchain-core
+langchain-openai
+python-dotenv
+yfinance
+pandas
+matplotlib
+websockets
+numpy
+python-multipart
+openai

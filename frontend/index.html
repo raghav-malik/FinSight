@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinSight - AI Financial Analyst</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="32" height="32" rx="8" fill="url(#gradient)"/>
+                        <path d="M8 16L14 10L18 14L24 8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M20 8H24V12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <defs>
+                            <linearGradient id="gradient" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#6366F1"/>
+                                <stop offset="1" stop-color="#8B5CF6"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span class="logo-text">FinSight</span>
+                </div>
+                <p class="tagline">Your AI Financial Analyst</p>
+            </div>
+
+            <div class="sidebar-content">
+                <div class="connection-status" id="connectionStatus">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Connecting...</span>
+                </div>
+
+                <div class="quick-actions">
+                    <h3>Quick Actions</h3>
+                    <button class="action-btn" onclick="sendQuickQuery('what is the current price of Apple?')">
+                        <span class="icon">💰</span>
+                        <span>Current Prices</span>
+                    </button>
+                    <button class="action-btn" onclick="sendQuickQuery('show me Tesla stock with SMA 20 and 50')">
+                        <span class="icon">📈</span>
+                        <span>Technical Analysis</span>
+                    </button>
+                    <button class="action-btn" onclick="sendQuickQuery('plot NVIDIA for the last 6 months')">
+                        <span class="icon">📊</span>
+                        <span>Visualizations</span>
+                    </button>
+                </div>
+
+                <div class="examples">
+                    <h3>Example Queries</h3>
+                    <div class="example-item" onclick="sendQuickQuery(this.textContent)">
+                        "Show me Microsoft stock for 3 months"
+                    </div>
+                    <div class="example-item" onclick="sendQuickQuery(this.textContent)">
+                        "Analyze Amazon with RSI"
+                    </div>
+                    <div class="example-item" onclick="sendQuickQuery(this.textContent)">
+                        "Chart Google with moving averages"
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <button class="clear-btn" id="clearBtn">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M2 4H14M6 4V2H10V4M3 4L4 14H12L13 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Clear Chat
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="main-content">
+            <div class="chat-header">
+                <h1>Financial Analysis Chat</h1>
+                <div class="header-actions">
+                    <button class="icon-btn" id="themeToggle" title="Toggle theme">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M10 2V4M10 16V18M4 10H2M18 10H16M15.657 4.343L14.243 5.757M5.757 14.243L4.343 15.657M15.657 15.657L14.243 14.243M5.757 5.757L4.343 4.343" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <!-- Welcome Message -->
+                <div class="message assistant-message welcome-message">
+                    <div class="message-avatar">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" fill="url(#gradient2)"/>
+                            <path d="M8 14C8 14 9.5 16 12 16C14.5 16 16 14 16 14M9 9H9.01M15 9H15.01" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                            <defs>
+                                <linearGradient id="gradient2" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#6366F1"/>
+                                    <stop offset="1" stop-color="#8B5CF6"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div class="message-content">
+                        <div class="message-text">
+                            <h2>Welcome to FinSight! 👋</h2>
+                            <p>I'm your AI-powered financial analyst. I can help you with:</p>
+                            <ul>
+                                <li><strong>Stock Prices:</strong> Get current or historical prices</li>
+                                <li><strong>Technical Analysis:</strong> SMA, EMA, RSI indicators</li>
+                                <li><strong>Visualizations:</strong> Interactive charts and graphs</li>
+                            </ul>
+                            <p class="hint">Try asking: "Show me Apple stock with SMA 20 and 50 for the last 3 months"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="Ask about stock prices, technical analysis, or visualizations..."
+                        rows="1"
+                    ></textarea>
+                    <button class="send-btn" id="sendBtn" disabled>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M2 10L18 2L10 18L8 11L2 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="input-hint">
+                    Press <kbd>Enter</kbd> to send, <kbd>Shift + Enter</kbd> for new line
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/chat-parser.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
