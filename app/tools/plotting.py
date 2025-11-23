@@ -3,8 +3,44 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from pydantic import BaseModel, Field
 from langchain.tools import tool
-from io import StringIO, BytesIO
-import base64
+from io import StringIO
+import os
+import time
+import glob
+
+
+def cleanup_old_charts(charts_dir: str, max_age_hours: int = 1):
+    """
+    Remove chart files older than max_age_hours to prevent disk space issues.
+    This is called automatically when creating new charts.
+
+    Args:
+        charts_dir: Directory containing chart files
+        max_age_hours: Maximum age of charts in hours (default: 1 hour)
+    """
+    try:
+        current_time = time.time()
+        max_age_seconds = max_age_hours * 3600
+
+        # Find all PNG files in the charts directory
+        chart_files = glob.glob(os.path.join(charts_dir, "chart_*.png"))
+
+        deleted_count = 0
+        for filepath in chart_files:
+            # Check file age
+            file_age = current_time - os.path.getmtime(filepath)
+            if file_age > max_age_seconds:
+                try:
+                    os.remove(filepath)
+                    deleted_count += 1
+                except Exception as e:
+                    print(f"Warning: Could not delete old chart {filepath}: {e}")
+
+        if deleted_count > 0:
+            print(f"Cleaned up {deleted_count} old chart file(s)")
+
+    except Exception as e:
+        print(f"Warning: Chart cleanup failed: {e}")
 
 
 class PlotInput(BaseModel):
@@ -15,16 +51,17 @@ class PlotInput(BaseModel):
 @tool(args_schema=PlotInput)
 def create_stock_plot(data_csv: str, ticker: str, plot_title: str) -> str:
     """
-    Creates a plot of stock data and returns it as a base64-encoded PNG image.
-    This tool takes the CSV output from 'get_historical_data' or 
+    Creates a plot of stock data and saves it as a PNG file.
+    This tool takes the CSV output from 'get_historical_data' or
     'calculate_technical_indicators' and generates a chart.
-    
-    The tool plots EVERY column it is given (except 'Volume'), 
+
+    The tool plots EVERY column it is given (except 'Volume'),
     so it will automatically plot 'SMA_20', 'RSI_14', etc., if they are in the CSV.
-    
+
     RSI indicators get their own subplot with overbought (70) and oversold (30) lines.
-    
-    Returns a special marker that your frontend can parse to display the image.
+
+    Returns a special marker with the chart filename that your frontend can parse to display the image.
+    This is much more efficient than base64 encoding and prevents token limit issues.
     """
     try:
         # 1. Convert the CSV string back into a DataFrame
@@ -83,17 +120,28 @@ def create_stock_plot(data_csv: str, ticker: str, plot_title: str) -> str:
         axes[-1].xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
         plt.xticks(rotation=45)
         plt.tight_layout()
-        
-        # 4. Save the plot to a BytesIO buffer and encode as base64
-        buf = BytesIO()
-        fig.savefig(buf, format='png', dpi=100, bbox_inches='tight')
-        buf.seek(0)
-        img_base64 = base64.b64encode(buf.read()).decode('utf-8')
+
+        # 4. Save the plot to a file (much more efficient than base64)
+        # Generate unique filename using timestamp
+        timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
+        filename = f"chart_{ticker}_{timestamp}.png"
+
+        # Save to frontend/charts directory
+        charts_dir = os.path.join(os.path.dirname(__file__), '../../frontend/charts')
+        os.makedirs(charts_dir, exist_ok=True)
+
+        # Clean up old charts to prevent disk space issues (keeps charts for 1 hour)
+        cleanup_old_charts(charts_dir, max_age_hours=1)
+
+        filepath = os.path.join(charts_dir, filename)
+
+        # Save the figure
+        fig.savefig(filepath, format='png', dpi=100, bbox_inches='tight')
         plt.close(fig)  # Close the figure to free up memory
-        
-        # 5. Return a special format that your frontend can parse
-        # Using a marker that's easy to detect and parse
-        return f"[IMAGE_DATA]data:image/png;base64,{img_base64}[/IMAGE_DATA]"
+
+        # 5. Return a special marker with the chart path
+        # This is much more efficient than base64 and prevents token limit issues
+        return f"[CHART_FILE]/charts/{filename}[/CHART_FILE]"
 
     except Exception as e:
         return f"Error during plot generation: {str(e)}"

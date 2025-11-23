@@ -128,6 +128,7 @@ async def websocket_endpoint(websocket: WebSocket):
 app.mount("/css", StaticFiles(directory="frontend/css"), name="css")
 app.mount("/js", StaticFiles(directory="frontend/js"), name="js")
 app.mount("/assets", StaticFiles(directory="frontend/assets"), name="assets")
+app.mount("/charts", StaticFiles(directory="frontend/charts"), name="charts")
 
 
 @app.get("/")

@@ -5,6 +5,9 @@
 
 class ChartParser {
     constructor() {
+        // Pattern for file-based charts (new efficient method)
+        this.chartFilePattern = /\[CHART_FILE\](\/charts\/[^\[]+)\[\/CHART_FILE\]/g;
+        // Pattern for base64 images (legacy support)
         this.imagePattern = /\[IMAGE_DATA\](data:image\/png;base64,[^\[]+)\[\/IMAGE_DATA\]/g;
         this.markdownImagePattern = /!\[.*?\]\((data:image\/png;base64,[^)]+)\)/g;
     }
@@ -18,8 +21,15 @@ class ChartParser {
         const images = [];
         let cleanText = text;
 
-        // Extract [IMAGE_DATA]...[/IMAGE_DATA] format
+        // Extract [CHART_FILE]...[/CHART_FILE] format (new efficient method)
         let match;
+        while ((match = this.chartFilePattern.exec(text)) !== null) {
+            images.push(match[1]);
+            cleanText = cleanText.replace(match[0], '');
+        }
+
+        // Extract [IMAGE_DATA]...[/IMAGE_DATA] format (legacy support)
+        this.chartFilePattern.lastIndex = 0; // Reset regex
         while ((match = this.imagePattern.exec(text)) !== null) {
             images.push(match[1]);
             cleanText = cleanText.replace(match[0], '');
@@ -34,6 +44,8 @@ class ChartParser {
 
         // Clean up any leftover markers
         cleanText = cleanText
+            .replace(/\[CHART_FILE\]/g, '')
+            .replace(/\[\/CHART_FILE\]/g, '')
             .replace(/\[IMAGE_DATA\]/g, '')
             .replace(/\[\/IMAGE_DATA\]/g, '')
             .trim();
@@ -46,7 +58,7 @@ class ChartParser {
 
     /**
      * Create chart element
-     * @param {string} imageData - Base64 image data
+     * @param {string} imageData - File path (e.g., "/charts/chart_AAPL_123.png") or base64 image data
      * @returns {HTMLElement} - Chart container element
      */
     createChartElement(imageData) {
@@ -63,7 +75,7 @@ class ChartParser {
         downloadBtn.className = 'chart-download-btn';
         downloadBtn.innerHTML = `
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M8 2V10M8 10L5 7M8 10L11 7M2 12V13C2 13.5304 2.21071 14.0391 2.58579 14.4142C2.96086 14.7893 3.46957 15 4 15H12C12.5304 15 13.0391 14.7893 13.4142 14.4142C13.7893 14.0391 14 13.5304 14 13V12" 
+                <path d="M8 2V10M8 10L5 7M8 10L11 7M2 12V13C2 13.5304 2.21071 14.0391 2.58579 14.4142C2.96086 14.7893 3.46957 15 4 15H12C12.5304 15 13.0391 14.7893 13.4142 14.4142C13.7893 14.0391 14 13.5304 14 13V12"
                     stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             Download Chart
@@ -78,15 +90,30 @@ class ChartParser {
 
     /**
      * Download chart as PNG
-     * @param {string} imageData - Base64 image data
+     * @param {string} imageData - File path or base64 image data
      */
-    downloadChart(imageData) {
-        const link = document.createElement('a');
-        link.href = imageData;
-        link.download = `finsight-chart-${Date.now()}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    async downloadChart(imageData) {
+        // If it's a file path, fetch it first; otherwise use directly
+        let downloadUrl = imageData;
+
+        if (imageData.startsWith('/charts/')) {
+            // It's a file path, we can download directly
+            const filename = imageData.split('/').pop();
+            const link = document.createElement('a');
+            link.href = imageData;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } else {
+            // It's base64 data
+            const link = document.createElement('a');
+            link.href = imageData;
+            link.download = `finsight-chart-${Date.now()}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     }
 
     /**
